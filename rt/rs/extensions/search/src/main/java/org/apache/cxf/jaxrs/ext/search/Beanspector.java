@@ -22,12 +22,16 @@ import java.beans.IntrospectionException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.apache.cxf.jaxrs.ext.search.collections.CollectionCheckInfo;
 
@@ -63,13 +67,123 @@ public class Beanspector<T> {
         if (tclass == null) {
             tclass = (Class<T>)tobj.getClass();
         }
-
-        // Class.getMethods - The elements in the returned array are not sorted and are not in any particular order.
-        // To provide some ordering, we can process DeclaredMethods first, then pick up the remaining.
-        processMethods(tclass.getDeclaredMethods());
-        processMethods(tclass.getMethods());
-
+        Map<String, List<Method>> detectGetters = new HashMap<>();
+        Map<String, List<Method>> detectSetters = new HashMap<>();
+        // process methods, build Getter/Setter maps
+        detectMethods(tclass.getMethods(), detectGetters, detectSetters);
+        // detect any pairings, regardless of method ordering.
+        detectPairs(detectGetters, detectSetters);
         // check type equality for getter-setter pairs
+        checkPairs();
+    }
+
+    private void detectMethods(Method[] methods,
+                               Map<String, List<Method>> detectGetters,
+                               Map<String, List<Method>> detectSetters) {
+        for (Method m : methods) {
+            if (isGetter(m)) {
+                String pname = getPropertyName(m);
+                if (!detectGetters.containsKey(pname)) {
+                    List<Method> getMethods = new ArrayList<>();
+                    getMethods.add(m);
+                    detectGetters.put(pname, getMethods);
+                } else {
+                    List<Method> getMethods = detectGetters.get(pname);
+                    getMethods.add(m);
+                    detectGetters.put(pname, getMethods);
+                }
+            } else if (isSetter(m)) {
+                String pname = getPropertyName(m);
+                if (!detectSetters.containsKey(pname)) {
+                    List<Method> setMethods = new ArrayList<>();
+                    setMethods.add(m);
+                    detectSetters.put(pname, setMethods);
+                } else {
+                    List<Method> setMethods = detectSetters.get(pname);
+                    setMethods.add(m);
+                    detectSetters.put(pname, setMethods);
+                }
+            }
+        }
+    }
+
+    private void detectPairs(Map<String, List<Method>> detectGetters, Map<String, List<Method>> detectSetters) {
+
+        Set<String> pairs = new HashSet<>(detectGetters.keySet());
+        processDetectGetters(detectGetters);
+        processDetectSetters(detectSetters);
+        pairs.retainAll(detectSetters.keySet());
+        for (String accessor : pairs) {
+            List<Class<?>> getterClasses = detectGetters.get(accessor).stream()
+                    .map(Method::getReturnType)
+                    .collect(Collectors.toList());
+            List<Class<?>> setterClasses = detectSetters.get(accessor).stream()
+                    .map(method -> method.getParameterTypes()[0])
+                    .collect(Collectors.toList());
+            if (!Collections.disjoint(getterClasses, setterClasses)) {
+                // Get the match(s), add first to getters / setters.
+                getterClasses.retainAll(setterClasses);
+                Method getterMethod = getMethodForGetterClass(getterClasses, detectGetters.get(accessor));
+                Method setterMethod = getMethodForSetterClass(getterClasses, detectSetters.get(accessor));
+                getters.put(accessor, getterMethod);
+                setters.put(accessor, setterMethod);
+            } else {
+                throw new IllegalArgumentException(String
+                        .format("Accessor '%s' type mismatch, getter types are %s while setter types are %s",
+                        accessor,
+                        getterClasses.stream().map(Class::getName).reduce("", String::concat),
+                        setterClasses.stream().map(Class::getName).reduce("", String::concat)));
+            }
+        }
+    }
+
+    private void processDetectGetters(Map<String, List<Method>> detectGetters) {
+        Set<String> keys = detectGetters.keySet();
+        keys.forEach(key -> {
+            detectGetters.get(key).forEach(method -> {
+                getters.put(key, method);
+            });
+        });
+    }
+
+    private void processDetectSetters(Map<String, List<Method>> detectSetters) {
+        Set<String> keys = detectSetters.keySet();
+        keys.forEach(key -> {
+            detectSetters.get(key).forEach(method -> {
+                setters.put(key, method);
+            });
+        });
+    }
+
+    private Method getMethodForGetterClass(List<Class<?>> getterClasses, List<Method> detectGetters) {
+        AtomicReference<Method> result = new AtomicReference<>();
+        detectGetters.forEach(detectedGetter -> {
+            Class<?> target = getterClasses.stream()
+                    .filter(gc -> gc.getName().equals(detectedGetter.getReturnType().getName()))
+                    .findAny()
+                    .orElse(null);
+            if (target != null) {
+                result.set(detectedGetter);
+            }
+        });
+        return result.get();
+    }
+
+    private Method getMethodForSetterClass(List<Class<?>> getterClasses, List<Method> detectSetters) {
+        AtomicReference<Method> result = new AtomicReference<>();
+        detectSetters.forEach(detectedSetter -> {
+            Class<?> target = getterClasses.stream()
+                    .filter(gc -> gc.getName().equals(detectedSetter.getParameterTypes()[0].getName()))
+                    .findAny()
+                    .orElse(null);
+            if (target != null) {
+                result.set(detectedSetter);
+            }
+        });
+        return result.get();
+    }
+
+    private void checkPairs() {
         Set<String> pairs = new HashSet<>(getters.keySet());
         pairs.retainAll(setters.keySet());
         for (String accessor : pairs) {
@@ -79,35 +193,6 @@ public class Beanspector<T> {
                 throw new IllegalArgumentException(String
                         .format("Accessor '%s' type mismatch, getter type is %s while setter type is %s",
                                 accessor, getterClass.getName(), setterClass.getName()));
-            }
-        }
-    }
-
-    private void processMethods(Method[] methods) {
-        for (Method m : methods) {
-            if (isGetter(m)) {
-                String pname = getPropertyName(m);
-                if (!getters.containsKey(pname)) {
-                    getters.put(getPropertyName(m), m);
-                } else {
-                    // Prefer the getter that has the most specialized class as a return type
-                    Method met = getters.get(pname);
-                    if (met.getReturnType().isAssignableFrom(m.getReturnType())) {
-                        getters.put(pname, m);
-                    }
-                }
-            } else if (isSetter(m)) {
-                String pname = getPropertyName(m);
-                System.out.println(m);
-                if (!setters.containsKey(pname)) {
-                    setters.put(getPropertyName(m), m);
-                } else {
-                    // Prefer the setter that has the most specialized class as a parameter
-                    Method met = setters.get(pname);
-                    if (met.getParameterTypes()[0].isAssignableFrom(m.getParameterTypes()[0])) {
-                        setters.put(pname, m);
-                    }
-                }
             }
         }
     }
