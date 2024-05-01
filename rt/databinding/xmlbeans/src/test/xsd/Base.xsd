@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   Licensed to the Apache Software Foundation (ASF) under one
   or more contributor license agreements. See the NOTICE file
@@ -17,21 +17,15 @@
   specific language governing permissions and limitations
   under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>cxf-rt-databinding</artifactId>
-    <packaging>pom</packaging>
-    <name>Apache CXF Databinding Runtime</name>
-    <description>Apache CXF Databinding Runtime</description>
-    <url>https://cxf.apache.org</url>
-    <parent>
-        <groupId>org.apache.cxf</groupId>
-        <artifactId>cxf-rt</artifactId>
-        <version>4.1.0-SNAPSHOT</version>
-    </parent>
-    <modules>
-        <module>jaxb</module>
-        <module>aegis</module>
-        <module>xmlbeans</module>
-    </modules>
-</project>
+<xs:schema targetNamespace="urn:xfire:xmlbeans:nstest" 
+  xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+  xmlns:xf="urn:xfire:xmlbeans:nstest" 
+  elementFormDefault="qualified" 
+  attributeFormDefault="unqualified">
+	<xs:complexType name="Request">
+		<xs:attribute name="id" type="xs:long" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="Response">
+		<xs:attribute name="id" type="xs:long" use="required"/>
+	</xs:complexType>
+</xs:schema>
