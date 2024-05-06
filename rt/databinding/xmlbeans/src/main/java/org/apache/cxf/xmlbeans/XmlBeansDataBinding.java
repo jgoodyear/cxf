@@ -45,9 +45,6 @@ import org.apache.cxf.databinding.WrapperHelper;
 import org.apache.cxf.service.Service;
 import org.apache.cxf.service.model.ServiceInfo;
 
-
-
-
 /**
  *
  */
@@ -110,7 +107,6 @@ public class XmlBeansDataBinding extends AbstractDataBinding implements WrapperC
                 // someone has already filled in the types
                 continue;
             }
-
             XmlBeansSchemaInitializer schemaInit
                 = new XmlBeansSchemaInitializer(serviceInfo, col, this);
             schemaInit.walk();

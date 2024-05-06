@@ -19,6 +19,7 @@
 package org.apache.cxf.xmlbeans;
 
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -93,13 +94,10 @@ public abstract class AbstractXmlBeansTest extends AbstractCXFTest {
 
         bus.setExtension(new WSDLManagerImpl(), WSDLManager.class);
 
-
         addNamespace("wsdl", WSDLConstants.NS_WSDL11);
         addNamespace("wsdlsoap", WSDLConstants.NS_SOAP11);
         addNamespace("xsd", WSDLConstants.NS_SCHEMA_XSD);
         addNamespace("xsd", Constants.URI_2001_SCHEMA_XSD);
-
-
     }
 
     @Override
@@ -113,7 +111,8 @@ public abstract class AbstractXmlBeansTest extends AbstractCXFTest {
         return invoke("local://" + service, LocalTransportFactory.TRANSPORT_ID, message);
     }
     protected Node invoke(String service, byte[] message) throws Exception {
-        return invoke("local://" + service, LocalTransportFactory.TRANSPORT_ID, new String(message));
+        return invoke("local://" + service, LocalTransportFactory.TRANSPORT_ID,
+                new String(message, StandardCharsets.UTF_8));
     }
 
     public Server createService(Class<?> serviceClass, QName name) {

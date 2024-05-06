@@ -32,8 +32,7 @@
     </parent>
     <properties>
         <cxf.spi-dir>spi-2.1</cxf.spi-dir>
-        <cxf.module.name>org.apache.cxf.databinding.jaxb</cxf.module.name>
-
+        <cxf.module.name>org.apache.cxf.databinding.xmlbeans</cxf.module.name>
         <cxf.osgi.import>
             jakarta.activation;version="${cxf.osgi.jakarta.activation.version}",
             jakarta.xml.bind*;version="${cxf.osgi.jakarta.bind.version}",
@@ -137,19 +136,47 @@
                 <version>5.2.0</version>
                 <executions>
                     <execution>
+                        <id>process-test-resources</id>
+                        <phase>validate</phase>
                         <goals>
                             <goal>compile</goal>
                         </goals>
                     </execution>
                 </executions>
                 <configuration>
-                    <repackage>com.sample</repackage>
-                    <name>sample</name>
-                    <buildSchemas>true</buildSchemas>
+                    <repackage>${project.groupId}.xmlbeans.metadata</repackage>
+                    <name>xmlbeans</name>
                     <sourceDir>${project.basedir}/src/test/xsd</sourceDir>
-                    <javaTargetDir>${project.build.directory}/generated/src/test/java</javaTargetDir>
-                    <classTargetDir>${project.build.directory}/classes</classTargetDir>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-core</artifactId>
+                        <version>2.21.1</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/generated/src/test/resources</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/classes</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.cxf</groupId>
@@ -166,10 +193,11 @@
                             <wsdlOptions>
                                 <wsdlOption>
                                     <wsdl>src/test/resources/wsdl/xmlbeanstest.wsdl</wsdl>
+                                    <frontEnd>cxf</frontEnd>
                                     <dataBinding>xmlbeans</dataBinding>
                                     <extraargs>
                                         <arg>-classdir</arg>
-                                        <arg>${basedir}/target/generated/src/test/resources</arg>
+                                        <arg>${project.build.directory}/generated/src/test/resources</arg>
                                     </extraargs>
                                 </wsdlOption>
                             </wsdlOptions>

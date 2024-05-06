@@ -19,10 +19,12 @@
 
 package org.apache.cxf.xmlbeans.basic;
 
+//import javax.xml.namespace.QName;
 
 import org.w3c.dom.Node;
 
 import org.apache.cxf.xmlbeans.AbstractXmlBeansTest;
+//import org.apache.cxf.xmlbeans.XmlBeansDataBinding;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -32,7 +34,11 @@ public class BasicTest extends AbstractXmlBeansTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        createService(TestService.class, null, "TestService", null);
+        createService(TestService.class, null, "TestService", null); //JMG
+        //XmlBeansDataBinding binding = new XmlBeansDataBinding();
+        //binding.setBus(getBus());
+        //createService(TestService.class, "TestService",
+        //        new QName("http://localhost", "TestService"), binding);
     }
 
     @Test

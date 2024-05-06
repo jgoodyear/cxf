@@ -75,8 +75,7 @@ class XmlBeansSchemaInitializer extends ServiceModelVisitor {
         = new HashMap<Class<?>, Class<? extends XmlAnySimpleType>>();
     private SchemaCollection schemas;
     private XmlBeansDataBinding dataBinding;
-    private Map<String, XmlSchema> schemaMap
-        = new HashMap<String, XmlSchema>();
+    private Map<String, XmlSchema> schemaMap = new HashMap<String, XmlSchema>();
     private URIResolver schemaResolver;
 
     static {
@@ -158,13 +157,15 @@ class XmlBeansSchemaInitializer extends ServiceModelVisitor {
         }
 
         try {
+            // SystemId needs refactoring
             InputSource fileSource = schemaResolver.resolveEntity(null,
                                                                         file,
                                                                         null);
-            String systemId = removePrefix(fileSource.getSystemId(),
-                                           XML_BEANS_SCHEMA_PREFIX);
-
-            return getSchemaInternal(sts, systemId);
+            //String systemId = removePrefix(fileSource.getSystemId(),
+            //                               XML_BEANS_SCHEMA_PREFIX);
+            removePrefix(fileSource.getSystemId(),
+                    XML_BEANS_SCHEMA_PREFIX);
+            return getSchemaInternal(sts, file);
         } catch (XmlSchemaException e) {
             if (LOG.isLoggable(Level.FINEST)) {
                 LOG.log(Level.FINEST,
@@ -296,7 +297,8 @@ class XmlBeansSchemaInitializer extends ServiceModelVisitor {
                 } else {
                     part.setTypeQName(st.getName());
                     part.setElement(false);
-                    part.setXmlSchema(schemas.getTypeByQName(st.getName()));
+                    QName schemaTypeName = st.getName();
+                    part.setXmlSchema(schemas.getTypeByQName(schemaTypeName));
                 }
             }
         } catch (RuntimeException ex) {
