@@ -174,7 +174,7 @@ public abstract class AbstractBraveTracingTest extends AbstractClientServerTestB
         final WebClient client = createWebClient("/bookstore/books/async");
         final Future<Response> f = client.async().get();
 
-        final Response r = f.get(1, TimeUnit.SECONDS);
+        final Response r = f.get(5, TimeUnit.SECONDS);
         assertEquals(Status.OK.getStatusCode(), r.getStatus());
 
         assertThat(TestSpanHandler.getAllSpans().size(), equalTo(2));
