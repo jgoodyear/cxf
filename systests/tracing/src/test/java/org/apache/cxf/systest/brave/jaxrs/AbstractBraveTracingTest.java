@@ -27,7 +27,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import brave.Span;
@@ -38,7 +37,6 @@ import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
-import org.apache.cxf.common.logging.LogUtils;
 import org.apache.cxf.feature.Feature;
 import org.apache.cxf.jaxrs.client.WebClient;
 import org.apache.cxf.systest.brave.BraveTestSupport.SpanId;
@@ -70,8 +68,6 @@ import static org.junit.Assert.assertFalse;
 public abstract class AbstractBraveTracingTest extends AbstractClientServerTestBase {
 
     private static final AtomicLong RANDOM = new AtomicLong();
-
-    private static final Logger LOG = LogUtils.getLogger(AbstractBraveTracingTest.class);
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -181,7 +177,7 @@ public abstract class AbstractBraveTracingTest extends AbstractClientServerTestB
         final Response r = f.get(5, TimeUnit.SECONDS);
         assertEquals(Status.OK.getStatusCode(), r.getStatus());
 
-        TestSpanHandler.getAllSpans().forEach(span -> LOG.info(span.name()));
+        TestSpanHandler.getAllSpans().forEach(span -> System.out.println(span.name()));
         assertThat(TestSpanHandler.getAllSpans().size(), equalTo(2));
         assertThat(TestSpanHandler.getAllSpans().get(1).name(), equalTo("GET /bookstore/books/async"));
         assertThat(TestSpanHandler.getAllSpans().get(0).name(), equalTo("Processing books"));
