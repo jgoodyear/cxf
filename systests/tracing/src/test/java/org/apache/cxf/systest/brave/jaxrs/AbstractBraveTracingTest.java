@@ -170,8 +170,11 @@ public abstract class AbstractBraveTracingTest extends AbstractClientServerTestB
     }
 
     @Test
-    public void testThatNewSpanIsCreatedUsingAsyncInvocation() {
-        final Response r = createWebClient("/bookstore/books/async").get();
+    public void testThatNewSpanIsCreatedUsingAsyncInvocation() throws Exception {
+        final WebClient client = createWebClient("/bookstore/books/async");
+        final Future<Response> f = client.async().get();
+
+        final Response r = f.get(1, TimeUnit.SECONDS);
         assertEquals(Status.OK.getStatusCode(), r.getStatus());
 
         assertThat(TestSpanHandler.getAllSpans().size(), equalTo(2));
@@ -362,7 +365,7 @@ public abstract class AbstractBraveTracingTest extends AbstractClientServerTestB
         assertFalse(r.getHeaders().containsKey(SAMPLED_NAME));
         assertFalse(r.getHeaders().containsKey(PARENT_SPAN_ID_NAME));
     }
-    
+
     @Test
     public void testThatErrorSpanIsCreatedOnErrorWhenNotProvided() {
         final Response r = createWebClient("/bookstore/books/error").get();
