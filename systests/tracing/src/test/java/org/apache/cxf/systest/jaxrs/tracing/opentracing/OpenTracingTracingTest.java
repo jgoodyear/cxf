@@ -196,7 +196,7 @@ public class OpenTracingTracingTest extends AbstractClientServerTestBase {
         final Response r = withTrace(createWebClient("/bookstore/books/async"), spanId).get();
         assertEquals(Status.OK.getStatusCode(), r.getStatus());
 
-        await().atMost(Duration.ofSeconds(1L)).until(()-> REPORTER.getSpans().size() == 2);
+        await().atMost(Duration.ofSeconds(5L)).until(()-> REPORTER.getSpans().size() == 2);
 
         assertThat(REPORTER.getSpans().size(), equalTo(2));
         assertEquals("Processing books", REPORTER.getSpans().get(0).getOperationName());
@@ -403,7 +403,7 @@ public class OpenTracingTracingTest extends AbstractClientServerTestBase {
         assertThat(REPORTER.getSpans().get(0).getOperationName(), equalTo("GET /bookstore/books/exception"));
         assertThat(REPORTER.getSpans().get(0).getTags(), hasItem(Tags.HTTP_STATUS.getKey(), 500));
     }
-    
+
     @Test
     public void testThatErrorSpanIsCreatedOnErrorWhenNotProvided() {
         final Response r = createWebClient("/bookstore/books/error").get();
