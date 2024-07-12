@@ -30,11 +30,11 @@
     <name>Apache CXF Distributed Tracing Integration System Tests</name>
     <description>Apache CXF Distributed Tracing Integration System Tests</description>
     <url>https://cxf.apache.org</url>
-    
+
     <properties>
         <cxf.module.name>org.apache.cxf.systests.tracing</cxf.module.name>
     </properties>
-    
+
     <dependencies>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
@@ -191,6 +191,15 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                </configuration>
             </plugin>
         </plugins>
     </build>
