@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
@@ -35,6 +36,7 @@ import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
+import org.apache.cxf.common.logging.LogUtils;
 import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
 import org.apache.cxf.jaxrs.client.WebClient;
 import org.apache.cxf.jaxrs.lifecycle.SingletonResourceProvider;
@@ -87,6 +89,8 @@ public class OpenTelemetryTracingTest extends AbstractClientServerTestBase {
     public static OpenTelemetryRule otelRule = OpenTelemetryRule.create();
 
     private static final AtomicLong RANDOM = new AtomicLong();
+
+    private static final Logger LOG = LogUtils.getLogger(OpenTelemetryTracingTest.class);
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -226,6 +230,7 @@ public class OpenTelemetryTracingTest extends AbstractClientServerTestBase {
 
         await().atMost(Duration.ofSeconds(5L)).until(() -> otelRule.getSpans().size() == 2);
 
+        otelRule.getSpans().forEach(span -> LOG.info(span.getName()));
         assertThat(otelRule.getSpans().size(), equalTo(2));
         assertThat(otelRule.getSpans().get(0).getName(), equalTo("Processing books"));
         assertThat(otelRule.getSpans().get(1).getName(), equalTo("GET /bookstore/books/async"));

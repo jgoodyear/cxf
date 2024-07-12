@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
@@ -37,6 +38,7 @@ import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
+import org.apache.cxf.common.logging.LogUtils;
 import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
 import org.apache.cxf.jaxrs.client.WebClient;
 import org.apache.cxf.jaxrs.lifecycle.SingletonResourceProvider;
@@ -80,6 +82,8 @@ import static org.junit.Assert.assertTrue;
 
 public class OpenTracingTracingTest extends AbstractClientServerTestBase {
     public static final String PORT = allocatePort(OpenTracingTracingTest.class);
+
+    private static final Logger LOG = LogUtils.getLogger(OpenTracingTracingTest.class);
 
     private static final AtomicLong RANDOM = new AtomicLong();
 
@@ -198,6 +202,7 @@ public class OpenTracingTracingTest extends AbstractClientServerTestBase {
 
         await().atMost(Duration.ofSeconds(5L)).until(()-> REPORTER.getSpans().size() == 2);
 
+        LOG.info(REPORTER.toString());
         assertThat(REPORTER.getSpans().size(), equalTo(2));
         assertEquals("Processing books", REPORTER.getSpans().get(0).getOperationName());
         assertEquals("GET /bookstore/books/async", REPORTER.getSpans().get(1).getOperationName());
