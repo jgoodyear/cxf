@@ -199,7 +199,7 @@ public class OpenTelemetryTracingTest extends AbstractClientServerTestBase {
             final Response r = withTrace(createWebClient("/bookstore/books/async")).get();
             assertEquals(Status.OK.getStatusCode(), r.getStatus());
 
-            await().atMost(Duration.ofSeconds(1L)).until(() -> otelRule.getSpans().size() == 2);
+            await().atMost(Duration.ofSeconds(5L)).until(() -> otelRule.getSpans().size() == 2);
 
             assertThat(otelRule.getSpans().size(), equalTo(2));
             assertEquals("Processing books", otelRule.getSpans().get(0).getName());

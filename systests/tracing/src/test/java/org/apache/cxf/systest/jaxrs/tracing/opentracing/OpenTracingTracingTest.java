@@ -202,7 +202,7 @@ public class OpenTracingTracingTest extends AbstractClientServerTestBase {
 
         await().atMost(Duration.ofSeconds(5L)).until(()-> REPORTER.getSpans().size() == 2);
 
-        LOG.info(REPORTER.toString());
+        REPORTER.getSpans().forEach(span -> LOG.info(span.getOperationName()));
         assertThat(REPORTER.getSpans().size(), equalTo(2));
         assertEquals("Processing books", REPORTER.getSpans().get(0).getOperationName());
         assertEquals("GET /bookstore/books/async", REPORTER.getSpans().get(1).getOperationName());
