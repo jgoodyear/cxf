@@ -22,6 +22,8 @@ import java.net.MalformedURLException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +34,7 @@ import java.util.stream.IntStream;
 import brave.Span;
 import brave.Tracer.SpanInScope;
 import brave.Tracing;
+import brave.handler.MutableSpan;
 import brave.sampler.Sampler;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.core.MediaType;
@@ -183,10 +186,12 @@ public abstract class AbstractBraveTracingTest extends AbstractClientServerTestB
         final Response r = f.get(5, TimeUnit.SECONDS);
         assertEquals(Status.OK.getStatusCode(), r.getStatus());
 
-        TestSpanHandler.getAllSpans().forEach(span -> System.out.println(span.name()));
-        assertThat(TestSpanHandler.getAllSpans().size(), equalTo(2));
-        assertThat(TestSpanHandler.getAllSpans().get(1).name(), equalTo("GET /bookstore/books/async"));
-        assertThat(TestSpanHandler.getAllSpans().get(0).name(), equalTo("Processing books"));
+        List<MutableSpan> spans = TestSpanHandler.getAllSpans().stream()
+                .sorted(Comparator.comparing(MutableSpan::finishTimestamp))
+                .toList();
+        assertThat(spans.size(), equalTo(2));
+        assertThat(spans.get(1).name(), equalTo("GET /bookstore/books/async"));
+        assertThat(spans.get(0).name(), equalTo("Processing books"));
     }
 
     @Test

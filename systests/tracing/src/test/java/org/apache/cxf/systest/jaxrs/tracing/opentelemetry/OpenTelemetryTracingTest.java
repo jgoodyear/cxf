@@ -22,6 +22,8 @@ import java.net.MalformedURLException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -61,6 +63,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.testing.junit4.OpenTelemetryRule;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.HttpAttributes;
 
 import org.junit.After;
@@ -226,10 +229,12 @@ public class OpenTelemetryTracingTest extends AbstractClientServerTestBase {
 
         await().atMost(Duration.ofSeconds(5L)).until(() -> otelRule.getSpans().size() == 2);
 
-        otelRule.getSpans().forEach(span -> System.out.println(span.getName()));
-        assertThat(otelRule.getSpans().size(), equalTo(2));
-        assertThat(otelRule.getSpans().get(0).getName(), equalTo("Processing books"));
-        assertThat(otelRule.getSpans().get(1).getName(), equalTo("GET /bookstore/books/async"));
+        List<SpanData> spanData = otelRule.getSpans().stream()
+                .sorted(Comparator.comparing(SpanData::getEndEpochNanos))
+                .toList();
+        assertThat(spanData.size(), equalTo(2));
+        assertThat(spanData.get(0).getName(), equalTo("Processing books"));
+        assertThat(spanData.get(1).getName(), equalTo("GET /bookstore/books/async"));
     }
 
     @Test
