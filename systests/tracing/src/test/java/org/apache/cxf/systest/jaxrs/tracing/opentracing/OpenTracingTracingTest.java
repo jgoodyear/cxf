@@ -202,7 +202,7 @@ public class OpenTracingTracingTest extends AbstractClientServerTestBase {
         await().atMost(Duration.ofSeconds(5L)).until(()-> REPORTER.getSpans().size() == 2);
 
         List<JaegerSpan> jaegerSpans = REPORTER.getSpans().stream()
-                .sorted(Comparator.comparing(JaegerSpan::getStart).reversed())
+                .sorted(Comparator.comparing(JaegerSpan::getDuration))
                 .toList();
         assertThat(jaegerSpans.size(), equalTo(2));
         assertEquals("Processing books", jaegerSpans.get(0).getOperationName());
