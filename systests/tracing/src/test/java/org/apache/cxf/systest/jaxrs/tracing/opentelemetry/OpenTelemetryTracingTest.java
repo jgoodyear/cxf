@@ -230,7 +230,7 @@ public class OpenTelemetryTracingTest extends AbstractClientServerTestBase {
         await().atMost(Duration.ofSeconds(5L)).until(() -> otelRule.getSpans().size() == 2);
 
         List<SpanData> spanData = otelRule.getSpans().stream()
-                .sorted(Comparator.comparing(SpanData::getEndEpochNanos))
+                .sorted(Comparator.comparing(SpanData::getTraceId))
                 .toList();
         assertThat(spanData.size(), equalTo(2));
         assertThat(spanData.get(0).getName(), equalTo("Processing books"));
