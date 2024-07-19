@@ -163,12 +163,15 @@ public abstract class AbstractBraveTracingTest extends AbstractClientServerTestB
         final Response r = f.get(5, TimeUnit.SECONDS);
         assertEquals(Status.OK.getStatusCode(), r.getStatus());
 
-        assertThat(TestSpanHandler.getAllSpans().size(), equalTo(2));
-        assertThat(TestSpanHandler.getAllSpans().get(1).name(), equalTo("GET /bookstore/books/async"));
-        assertThat(TestSpanHandler.getAllSpans().get(0).name(), equalTo("Processing books"));
-        assertThat(TestSpanHandler.getAllSpans().get(0).parentId(), not(nullValue()));
-        assertThat(TestSpanHandler.getAllSpans().get(0).parentId(),
-            equalTo(TestSpanHandler.getAllSpans().get(1).id()));
+        List<MutableSpan> spans = TestSpanHandler.getAllSpans().stream()
+                .sorted(Comparator.comparing(MutableSpan::finishTimestamp))
+                .toList();
+
+        assertThat(spans.size(), equalTo(2));
+        assertThat(spans.get(1).name(), equalTo("GET /bookstore/books/async"));
+        assertThat(spans.get(0).name(), equalTo("Processing books"));
+        assertThat(spans.get(0).parentId(), not(nullValue()));
+        assertThat(spans.get(0).parentId(), equalTo(spans.get(1).id()));
     }
 
     @Test
