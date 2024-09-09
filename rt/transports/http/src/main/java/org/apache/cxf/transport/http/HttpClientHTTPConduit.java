@@ -25,6 +25,8 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PushbackInputStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -129,7 +131,34 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 finalizer.run();
 
                 if (client instanceof AutoCloseable) {
-                    tryToShutdownSelector(client);
+                    try {
+                        // The HttpClient::close may hang during the termination.
+                        try {
+                            // Try to call shutdownNow() first
+                            AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
+                                try {
+                                    tryToShutdownSelector(client);
+                                    MethodHandles.publicLookup()
+                                        .findVirtual(HttpClient.class, "awaitTermination", MethodType.methodType(void.class))
+                                        .bindTo(client)
+                                        .invokeExact(Duration.ofNanos(100));
+                                    return null;
+                                } catch (final Throwable ex) {
+                                    if (ex instanceof Error) {
+                                        throw (Error) ex;
+                                    } else {
+                                        throw (Exception) ex;
+                                    }
+                                }
+                            });
+                        } catch (final PrivilegedActionException e) {
+                            //ignore
+                        }
+
+                        ((AutoCloseable)client).close();
+                    } catch (Exception e) {
+                        //ignore
+                    }
                 } else if (client != null) {
                     tryToShutdownSelector(client);
                 }
