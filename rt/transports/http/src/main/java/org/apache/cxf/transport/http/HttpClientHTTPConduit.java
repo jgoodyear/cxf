@@ -139,7 +139,9 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                                 try {
                                     tryToShutdownSelector(client);
                                     MethodHandles.publicLookup()
-                                        .findVirtual(HttpClient.class, "awaitTermination", MethodType.methodType(void.class))
+                                        .findVirtual(HttpClient.class,
+                                                "awaitTermination",
+                                                MethodType.methodType(void.class))
                                         .bindTo(client)
                                         .invokeExact(Duration.ofNanos(100));
                                     return null;
