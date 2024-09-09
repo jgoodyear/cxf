@@ -129,11 +129,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 finalizer.run();
 
                 if (client instanceof AutoCloseable) {
-                    try {
-                        ((AutoCloseable)client).close();
-                    } catch (Exception e) {
-                        //ignore
-                    }
+                    tryToShutdownSelector(client);
                 } else if (client != null) {
                     tryToShutdownSelector(client);
                 }
