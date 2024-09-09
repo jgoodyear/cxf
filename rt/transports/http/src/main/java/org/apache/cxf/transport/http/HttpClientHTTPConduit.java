@@ -25,8 +25,6 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PushbackInputStream;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -106,7 +104,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
     volatile int lastTlsHash = -1;
     volatile URI sslURL;
     private final ReentrantLock initializationLock = new ReentrantLock();
-    
+
     private static final class RefCount<T extends HttpClient> {
         private final AtomicLong count = new AtomicLong();
         private final TLSClientParameters clientParameters;
@@ -120,44 +118,22 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             this.clientParameters = clientParameters;
             this.finalizer = finalizer;
         }
-        
+
         RefCount<T> acquire() {
             count.incrementAndGet();
             return this;
         }
-        
+
         void release() {
             if (count.decrementAndGet() == 0) {
                 finalizer.run();
 
                 if (client instanceof AutoCloseable) {
                     try {
-                        // The HttpClient::close may hang during the termination.
-                        try {
-                            // Try to call shutdownNow() first
-                            AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
-                                try {
-                                    MethodHandles.publicLookup()
-                                        .findVirtual(HttpClient.class, "shutdownNow", MethodType.methodType(void.class))
-                                        .bindTo(client)
-                                        .invokeExact();
-                                    return null;
-                                } catch (final Throwable ex) {
-                                    if (ex instanceof Error) {
-                                        throw (Error) ex;
-                                    } else {
-                                        throw (Exception) ex;
-                                    }
-                                }
-                            });
-                        } catch (final PrivilegedActionException e) {
-                            //ignore
-                        }
-
                         ((AutoCloseable)client).close();
                     } catch (Exception e) {
                         //ignore
-                    }                
+                    }
                 } else if (client != null) {
                     tryToShutdownSelector(client);
                 }
@@ -176,7 +152,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             return clientParameters;
         }
     }
-    
+
     private static final class HttpClientCache {
         private static final int MAX_SIZE = 100; // Keeping at most 100 clients
 
@@ -184,9 +160,9 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
         private final ClientPolicyCalculator cpc = new ClientPolicyCalculator();
         private final ReentrantLock lock = new ReentrantLock();
 
-        RefCount<HttpClient> computeIfAbsent(final boolean shareHttpClient, final HTTPClientPolicy policy, 
+        RefCount<HttpClient> computeIfAbsent(final boolean shareHttpClient, final HTTPClientPolicy policy,
                 final TLSClientParameters clientParameters, final Supplier<HttpClient> supplier) {
-            
+
             // Do not share if it is not allowed for the conduit or cache capacity is exceeded
             if (!shareHttpClient || clients.size() >= MAX_SIZE) {
                 return new RefCount<HttpClient>(supplier.get(), policy, clientParameters, () -> { }).acquire();
@@ -231,7 +207,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
     public HttpClientHTTPConduit(Bus b, EndpointInfo ei, EndpointReferenceType t) throws IOException {
         super(b, ei, t);
     }
-    
+
     private static Set<String> getRestrictedHeaders() {
         Set<String> headers = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         headers.addAll(Set.of("Connection", "Content-Length", "Expect", "Host", "Upgrade"));
@@ -243,13 +219,13 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 || !lastURL.getHost().equals(url.getHost())
                 || lastURL.getPort() != url.getPort();
     }
-    
+
     @Override
     public void close(Message msg) throws IOException {
         super.close(msg);
         msg.remove(HttpClient.class);
     }
-    
+
     /**
      * Close the conduit
      */
@@ -264,17 +240,17 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
     private static void tryToShutdownSelector(HttpClient client) {
         synchronized (client) {
             String n = client.toString();
-    
+
             // it can take three seconds (or more) for the JVM to determine the client
             // is unreferenced and then shutdown the selector thread, we'll try and speed that
-            // up.  This is somewhat of a complete hack.   
+            // up.  This is somewhat of a complete hack.
             int idx = n.lastIndexOf('(');
             if (idx > 0) {
                 n = n.substring(idx + 1);
                 n = n.substring(0, n.length() - 1);
                 n = "HttpClient-" + n + "-SelectorManager";
             }
-            try {        
+            try {
                 ThreadGroup rootGroup = Thread.currentThread().getThreadGroup();
                 Thread[] threads = new Thread[rootGroup.activeCount()];
                 int cnt = rootGroup.enumerate(threads);
@@ -293,7 +269,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             }
         }
     }
-    
+
     @Override
     protected void setupConnection(Message message, Address address, HTTPClientPolicy csPolicy) throws IOException {
         URI uri = address.getURI();
@@ -319,15 +295,15 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 o = Boolean.TRUE;
             }
             if (clientParameters.isDisableCNCheck()) {
-                if (clientParameters.getSslContext() != null) { 
+                if (clientParameters.getSslContext() != null) {
                     // If they specify their own SSLContext, we cannot handle the
                     // HostnameVerifier so we'll need to use the URLConnection
                     o = Boolean.TRUE;
                 }
-                if (clientParameters.getTrustManagers() != null 
+                if (clientParameters.getTrustManagers() != null
                     && JavaUtils.getJavaMajorVersion() < 14) {
                     // trustmanagers hacks don't work on Java11
-                    o = Boolean.TRUE;                    
+                    o = Boolean.TRUE;
                 }
             }
         }
@@ -336,7 +312,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             super.setupConnection(message, address, csPolicy);
             return;
         }
-        
+
         if (sslURL != null && isSslTargetDifferent(sslURL, uri)) {
             sslURL = null;
             if (clientRef != null) {
@@ -360,17 +336,17 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             HttpClient.Builder cb = HttpClient.newBuilder()
                 .proxy(ps)
                 .followRedirects(Redirect.NEVER);
-            
+
             if (ctimeout > 0) {
                 cb.connectTimeout(Duration.ofMillis(ctimeout));
             }
-            
+
             if ("https".equals(uri.getScheme())) {
                 sslURL = uri;
                 try {
                     SSLContext sslContext = clientParameters.getSslContext();
                     if (sslContext == null) {
-                        sslContext = SSLUtils.getSSLContext(clientParameters, true);                    
+                        sslContext = SSLUtils.getSSLContext(clientParameters, true);
                         cb.sslContext(sslContext);
                     }
                     if (sslContext != null) {
@@ -382,13 +358,13 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                                                           sslContext.getSocketFactory().getDefaultCipherSuites(),
                                                           supportedCiphers,
                                                           LOG);
-                        
+
                         if (clientParameters.getSecureSocketProtocol() != null) {
                             String protocol = clientParameters.getSecureSocketProtocol();
                             SSLParameters params = new SSLParameters(cipherSuites, new String[] {protocol});
                             cb.sslParameters(params);
                         } else {
-                            final SSLParameters params = new SSLParameters(cipherSuites, 
+                            final SSLParameters params = new SSLParameters(cipherSuites,
                                 TLSClientParameters.getPreferredClientProtocols());
                             cb.sslParameters(params);
                         }
@@ -402,7 +378,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 verc = csPolicy.getVersion();
             }
             if ("1.1".equals(HTTP_VERSION) || "1.1".equals(verc)) {
-                cb.version(Version.HTTP_1_1);  
+                cb.version(Version.HTTP_1_1);
             }
 
             // make sure the conduit is not yet initialized
@@ -413,8 +389,8 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                     final boolean shareHttpClient = MessageUtils.getContextualBoolean(message,
                         SHARE_HTTPCLIENT_CONDUIT, true);
                     cl = CLIENTS_CACHE.computeIfAbsent(shareHttpClient, csPolicy, clientParameters, () -> cb.build());
-    
-                    if (!"https".equals(uri.getScheme()) 
+
+                    if (!"https".equals(uri.getScheme())
                         && !KNOWN_HTTP_VERBS_WITH_NO_CONTENT.contains(httpRequestMethod)
                         && cl.client().version() == Version.HTTP_2
                         && ("2".equals(verc) || ("auto".equals(verc) && "2".equals(HTTP_VERSION)))) {
@@ -422,7 +398,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                             // We specifically want HTTP2, but we're using a request
                             // that won't trigger an upgrade to HTTP/2 so we'll
                             // call OPTIONS on the URI which may trigger HTTP/2 upgrade.
-                            // Not needed for methods that don't have a body (GET/HEAD/etc...) 
+                            // Not needed for methods that don't have a body (GET/HEAD/etc...)
                             // or for https (negotiated at the TLS level)
                             HttpRequest.Builder rb = HttpRequest.newBuilder()
                                 .uri(uri)
@@ -431,7 +407,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                         } catch (IOException | InterruptedException e) {
                             //
                         }
-                    } 
+                    }
 
                     clientRef = cl;
                 }
@@ -440,7 +416,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             }
         }
         message.put(HttpClient.class, cl.client());
-        
+
         message.put(KEY_HTTP_CONNECTION_ADDRESS, address);
     }
 
@@ -448,7 +424,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
     protected OutputStream createOutputStream(Message message, boolean needToCacheRequest, boolean isChunking,
                                               int chunkThreshold)
         throws IOException {
-        
+
         Object o = message.get("USING_URLCONNECTION");
         if (Boolean.TRUE == o) {
             return super.createOutputStream(message, needToCacheRequest, isChunking, chunkThreshold);
@@ -508,7 +484,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
         HttpClientWrappedOutputStream stream;
         HTTPClientPolicy csPolicy;
         HttpClientBodyPublisher publisher;
-        HttpClientPipedOutputStream(HttpClientWrappedOutputStream s, 
+        HttpClientPipedOutputStream(HttpClientWrappedOutputStream s,
                                     PipedInputStream pin,
                                     HTTPClientPolicy cp,
                                     HttpClientBodyPublisher bp) throws IOException {
@@ -520,7 +496,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
         public void close() throws IOException {
             super.close();
             csPolicy = null;
-            stream = null;  
+            stream = null;
             if (publisher != null) {
                 publisher.close();
                 publisher = null;
@@ -587,7 +563,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
         InputStreamSupplier(InputStream i) {
             in = i;
         }
-        
+
         public InputStream get() {
             return in;
         }
@@ -607,7 +583,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 stream = null;
             }
         }
-        
+
         @Override
         public synchronized void subscribe(Subscriber<? super ByteBuffer> subscriber) {
             if (stream != null) {
@@ -615,7 +591,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 contentLen = stream.contentLen;
                 if (stream.pout != null) {
                     synchronized (stream.pout) {
-                        stream.pout.notifyAll();                       
+                        stream.pout.notifyAll();
                     }
                     if (stream != null) {
                         contentLen = stream.contentLen;
@@ -637,7 +613,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             return contentLen;
         }
     }
-    class HttpClientWrappedOutputStream extends WrappedOutputStream {  
+    class HttpClientWrappedOutputStream extends WrappedOutputStream {
 
         List<Flow.Subscriber<? super ByteBuffer>> subscribers = new LinkedList<>();
         CompletableFuture<HttpResponse<InputStream>> future;
@@ -648,8 +624,8 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
         PipedOutputStream pout;
         HttpClientBodyPublisher publisher;
         HttpRequest request;
-        
-        
+
+
         HttpClientWrappedOutputStream(Message message,
                                       boolean needToCacheRequest, boolean isChunking,
                                       int chunkThreshold, String conduitName) {
@@ -669,7 +645,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 publisher = null;
             }
             request = null;
-            subscribers = null;            
+            subscribers = null;
         }
         void addSubscriber(Flow.Subscriber<? super ByteBuffer> subscriber) {
             subscribers.add(subscriber);
@@ -679,7 +655,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
         protected void setFixedLengthStreamingMode(int i) {
             contentLen = i;
         }
-        
+
         @Override
         protected void handleNoOutput() throws IOException {
             contentLen = 0;
@@ -738,9 +714,9 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 if (!dropContentType) {
                     rb.header(HttpHeaderHelper.CONTENT_TYPE, h.determineContentType());
                 }
-            }            
+            }
         }
-        
+
         private boolean isConnectionAttemptCompleted(HTTPClientPolicy csPolicy, PipedOutputStream out)
             throws IOException {
             if (!connectionComplete) {
@@ -775,8 +751,8 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             }
             return true;
         }
-        
-        
+
+
         @Override
         protected void setProtocolHeaders() throws IOException {
             HttpClient cl = outMessage.get(HttpClient.class);
@@ -785,7 +761,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             String httpRequestMethod =
                 (String)outMessage.get(Message.HTTP_REQUEST_METHOD);
 
-            
+
             if (KNOWN_HTTP_VERBS_WITH_NO_CONTENT.contains(httpRequestMethod)
                 || PropertyUtils.isTrue(outMessage.get(Headers.EMPTY_REQUEST_PROPERTY))) {
                 contentLen = 0;
@@ -793,21 +769,21 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
 
             final PipedInputStream pin = new PipedInputStream(csPolicy.getChunkLength() <= 0
                 ? 4096 : csPolicy.getChunkLength());
-            
+
             this.publisher = new HttpClientBodyPublisher(this, pin);
             if (contentLen != 0) {
                 pout = new HttpClientPipedOutputStream(this, pin, csPolicy, publisher);
             }
 
             HttpRequest.Builder rb = HttpRequest.newBuilder()
-                .method(httpRequestMethod, publisher);  
+                .method(httpRequestMethod, publisher);
             String verc = (String)outMessage.getContextualProperty(FORCE_HTTP_VERSION);
             if (verc == null) {
                 verc = csPolicy.getVersion();
             }
             if ("1.1".equals(HTTP_VERSION) || "1.1".equals(verc)) {
-                rb.version(Version.HTTP_1_1);  
-            }            
+                rb.version(Version.HTTP_1_1);
+            }
             try {
                 rb.uri(address.getURI());
             } catch (IllegalArgumentException iae) {
@@ -815,17 +791,17 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 mex.initCause(iae);
                 throw mex;
             }
-            
+
             rtimeout = determineReceiveTimeout(outMessage, csPolicy);
             if (rtimeout > 0) {
                 rb.timeout(Duration.ofMillis(rtimeout));
             }
 
             setProtocolHeadersInBuilder(rb);
-                
+
             request = rb.build();
-            
-            
+
+
             final BodyHandler<InputStream> handler =  BodyHandlers.ofInputStream();
             if (System.getSecurityManager() != null) {
                 try {
@@ -891,7 +867,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                         uhe.initCause(cause);
                         throw uhe;
                     }
-                        
+
                 }
                 if (t instanceof IOException) {
                     IOException iot = (IOException)t;
@@ -903,9 +879,9 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             } catch (TimeoutException e) {
                 throw (IOException)(new HttpTimeoutException("Timeout").initCause(e));
             }
-            
+
         }
-        
+
         @Override
         protected int getResponseCode() throws IOException {
             return getResponse().statusCode();
@@ -917,13 +893,13 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             h.readFromConnection(rsp.headers().map());
             if (rsp.headers().map().containsKey(Message.CONTENT_TYPE)) {
                 List<String> s = rsp.headers().allValues(Message.CONTENT_TYPE);
-                inMessage.put(Message.CONTENT_TYPE, String.join(",", s));                
+                inMessage.put(Message.CONTENT_TYPE, String.join(",", s));
             } else {
                 inMessage.put(Message.CONTENT_TYPE, null);
             }
             cookies.readFromHeaders(h);
         }
-        
+
         @Override
         protected InputStream getInputStream() throws IOException {
             HttpResponse<InputStream> resp = getResponse();
@@ -1014,18 +990,18 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             }
             return null;
         }
-        
+
         @Override
         protected HttpsURLConnectionInfo getHttpsURLConnectionInfo() throws IOException {
             Address addrss = (Address)outMessage.get(KEY_HTTP_CONNECTION_ADDRESS);
             URI uri = addrss.getURI();
-            
+
             if ("http".equals(uri.getScheme())) {
                 return null;
             }
             String method = (String)outMessage.get(Message.HTTP_REQUEST_METHOD);
             HttpClient cl = outMessage.get(HttpClient.class);
-            
+
             while (!connectionComplete || !cl.sslContext().getClientSessionContext().getIds().hasMoreElements()) {
                 Thread.yield();
             }
@@ -1036,15 +1012,15 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             Principal principal = session.getLocalPrincipal();
             Certificate[] serverCerts = session.getPeerCertificates();
             Principal peer = session.getPeerPrincipal();
-            
+
             HttpsURLConnectionInfo info = new HttpsURLConnectionInfo(uri, method, cipherSuite,
                                                                      localCerts, principal,
                                                                      serverCerts, peer);
-            
+
             return info;
         }
 
-        
+
 
         @Override
         protected boolean usingProxy() {
@@ -1070,7 +1046,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 } catch (IOException ioe) {
                     // ignore
                 }
-            }            
+            }
             // Don't need to do anything
             return null;
         }
@@ -1078,7 +1054,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
         @Override
         protected void setupNewConnection(String newURL) throws IOException {
             connectionComplete = false;
-            
+
             HTTPClientPolicy cp = getClient(outMessage);
             Address address;
             try {
