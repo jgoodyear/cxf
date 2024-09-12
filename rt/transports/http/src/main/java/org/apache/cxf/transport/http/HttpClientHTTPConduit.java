@@ -79,8 +79,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSession;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.cxf.Bus;
 import org.apache.cxf.common.util.PropertyUtils;
 import org.apache.cxf.configuration.jsse.TLSClientParameters;
@@ -104,7 +102,6 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
 
     private static final Set<String> RESTRICTED_HEADERS = getRestrictedHeaders();
     private static final HttpClientCache CLIENTS_CACHE = new HttpClientCache();
-    private static final Log log = LogFactory.getLog(HttpClientHTTPConduit.class);
     volatile RefCount<HttpClient> clientRef;
     volatile int lastTlsHash = -1;
     volatile URI sslURL;
@@ -162,7 +159,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
 
                         ((AutoCloseable)client).close();
                     } catch (Exception e) {
-                        log.error("Client AutoClose Error: " + e.getMessage() + " " + e);
+                        System.out.println("Client AutoClose Error: " + e.getMessage() + " " + e);
                     }
                 } else if (client != null) {
                     tryToShutdownSelector(client);
@@ -363,7 +360,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             int ctimeout = determineConnectionTimeout(message, csPolicy);
             ProxySelector ps = new ProxyFactoryProxySelector(proxyFactory, csPolicy);
 
-            log.info("HttpClientHTTPConduit: Make a new HttpClient!");
+            System.out.println("HttpClientHTTPConduit: Make a new HttpClient!");
             HttpClient.Builder cb = HttpClient.newBuilder()
                 .proxy(ps)
                 .followRedirects(Redirect.NEVER);
