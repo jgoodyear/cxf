@@ -253,6 +253,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
 
     @Override
     public void close(Message msg) throws IOException {
+        System.out.println("HttpClientHttpConduit: Close Message: " + msg.toString());
         super.close(msg);
         msg.remove(HttpClient.class);
     }
@@ -667,12 +668,15 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
 
         @Override
         public void close() throws IOException {
+            System.out.println("HttpClientWrappedOutputStream Close PipedOutputStream");
             super.close();
             if (pout != null) {
+                System.out.println("HttpClientWrappedOutputStream Close publisher");
                 pout.close();
                 pout = null;
             }
             if (publisher != null) {
+                System.out.println("HttpClientWrappedOutputStream Close publisher");
                 publisher.close();
                 publisher = null;
             }

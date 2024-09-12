@@ -74,6 +74,7 @@ public abstract class AbstractWrappedOutputStream extends OutputStream {
     @Override
     public void close() throws IOException {
         if (wrappedStream != null) {
+            System.out.println("Wrapped stream closed");
             wrappedStream.close();
         }
     }
