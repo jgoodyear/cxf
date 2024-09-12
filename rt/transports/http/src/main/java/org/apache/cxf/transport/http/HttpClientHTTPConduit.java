@@ -128,12 +128,14 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
 
         void release() {
             if (count.decrementAndGet() == 0) {
+                System.out.println("Release client:  " + client.toString());
                 finalizer.run();
 
                 if (client instanceof AutoCloseable) {
                     try {
                         // The HttpClient::close may hang during the termination.
                         try {
+                            System.out.println("Try shutdown now: " + client.toString());
                             // Try to call shutdownNow() first
                             AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
                                 try {
@@ -146,6 +148,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                                         .invokeExact(Duration.ofNanos(100));
                                     return null;
                                 } catch (final Throwable ex) {
+                                    System.out.println("Could not shutdown client: " + client.toString());
                                     if (ex instanceof Error) {
                                         throw (Error) ex;
                                     } else {
@@ -162,6 +165,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                         System.out.println("Client AutoClose Error: " + e.getMessage() + " " + e);
                     }
                 } else if (client != null) {
+                    System.out.println("Try shutdown selector now: " + client.toString());
                     tryToShutdownSelector(client);
                 }
             }
