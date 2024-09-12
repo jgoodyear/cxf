@@ -363,6 +363,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             int ctimeout = determineConnectionTimeout(message, csPolicy);
             ProxySelector ps = new ProxyFactoryProxySelector(proxyFactory, csPolicy);
 
+            log.info("HttpClientHTTPConduit: Make a new HttpClient!");
             HttpClient.Builder cb = HttpClient.newBuilder()
                 .proxy(ps)
                 .followRedirects(Redirect.NEVER);
