@@ -1410,11 +1410,6 @@ public abstract class HTTPConduit
                 }
                 if (!cachingForRetransmission) {
                     super.close();
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e) {
-                        //
-                    }
                 } else if (cachedStream != null) {
                     super.flush();
                     cachedStream.getOut().close();
