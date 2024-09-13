@@ -674,7 +674,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             System.out.println("HttpClientWrappedOutputStream Close PipedOutputStream");
             super.close();
             if (pout != null) {
-                System.out.println("HttpClientWrappedOutputStream Close publisher");
+                System.out.println("HttpClientWrappedOutputStream Close pout");
                 pout.close();
                 pout = null;
             }
