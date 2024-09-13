@@ -1410,22 +1410,21 @@ public abstract class HTTPConduit
                     handleHeadersTrustCaching();
                 }
                 if (!cachingForRetransmission) {
-                    System.out.println("cachingForRetransmission close");
+                    System.out.println("cachingForRetransmission closing...");
                     super.close();
+                    System.out.println("cachingForRetransmission closed!");
                 } else if (cachedStream != null) {
-                    System.out.println("cachedStream flush");
                     super.flush();
-                    System.out.println("cachedStream close");
                     cachedStream.getOut().close();
-                    System.out.println("closeFlowthroughStream close");
                     cachedStream.closeFlowthroughStream();
-                    System.out.println("Stream closed!");
                 }
 
                 try {
                     handleResponse();
+                    System.out.println("handleResponse!");
                 } finally {
                     if (cachingForRetransmission && cachedStream != null) {
+                        System.out.println("cachedStream closing...");
                         cachedStream.close();
                         System.out.println("cachedStream closed!");
                     }

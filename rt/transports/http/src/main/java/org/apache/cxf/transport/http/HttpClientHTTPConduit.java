@@ -617,6 +617,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             if (stream != null) {
                 contentLen = stream.contentLen;
                 stream = null;
+                System.out.println("HttpClientBodyPublisher closed!");
             }
         }
 
@@ -671,10 +672,8 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
 
         @Override
         public void close() throws IOException {
-            System.out.println("HttpClientWrappedOutputStream Close PipedOutputStream");
             super.close();
             if (pout != null) {
-                System.out.println("HttpClientWrappedOutputStream Close pout");
                 pout.close();
                 pout = null;
             }
@@ -682,6 +681,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                 System.out.println("HttpClientWrappedOutputStream Close publisher");
                 publisher.close();
                 publisher = null;
+                System.out.println("HttpClientWrappedOutputStream Publisher Closed!");
             }
             request = null;
             subscribers = null;
@@ -699,7 +699,6 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
         protected void handleNoOutput() throws IOException {
             contentLen = 0;
             if (pout != null) {
-                System.out.println("HttpClientWrappedOutputStream handleNoOutput");
                 pout.close();
             }
             if (exception != null) {
