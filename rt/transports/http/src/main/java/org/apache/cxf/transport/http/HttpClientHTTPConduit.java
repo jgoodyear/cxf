@@ -159,7 +159,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
                         } catch (final PrivilegedActionException e) {
                             //ignore
                         }
-
+                        System.out.println("HCHC: RefCount: Release client close");
                         ((AutoCloseable)client).close();
                     } catch (Exception e) {
                         System.out.println("Client AutoClose Error: " + e.getMessage() + " " + e);
@@ -267,6 +267,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             clientRef = null;
         }
         defaultAddress = null;
+        System.out.println("HCHC: Close the conduit");
         super.close();
     }
     private static void tryToShutdownSelector(HttpClient client) {
@@ -527,10 +528,12 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
             publisher = bp;
         }
         public void close() throws IOException {
+            System.out.println("HCHC: HttpClientPipedOutputStream: close");
             super.close();
             csPolicy = null;
             stream = null;
             if (publisher != null) {
+                System.out.println("HCHC: HttpClientPipedOutputStream: close publisher");
                 publisher.close();
                 publisher = null;
             }
@@ -696,6 +699,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
         protected void handleNoOutput() throws IOException {
             contentLen = 0;
             if (pout != null) {
+                System.out.println("HttpClientWrappedOutputStream handleNoOutput");
                 pout.close();
             }
             if (exception != null) {
@@ -1110,6 +1114,7 @@ public class HttpClientHTTPConduit extends URLConnectionHTTPConduit {
         protected void retransmitStream() throws IOException {
             cachedStream.writeCacheTo(pout);
             if (pout != null) {
+                System.out.println("HCHC: retransmitStream close pout");
                 pout.close();
             }
         }
