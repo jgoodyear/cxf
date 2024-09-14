@@ -1418,11 +1418,6 @@ public abstract class HTTPConduit
 
                 try {
                     handleResponse();
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e) {
-                        //
-                    }
                 } finally {
                     if (cachingForRetransmission && cachedStream != null) {
                         cachedStream.close();
@@ -1629,8 +1624,10 @@ public abstract class HTTPConduit
                 || outMessage.getExchange() == null
                 || outMessage.getExchange().isSynchronous()) {
                 handleResponseInternal();
+                System.out.println("handleResponseInternal");
             } else {
                 handleResponseAsync();
+                System.out.println("handleResponseAsync");
             }
         }
 
