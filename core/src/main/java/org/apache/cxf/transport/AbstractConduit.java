@@ -53,6 +53,7 @@ public abstract class AbstractConduit
     public void close(Message msg) throws IOException {
         OutputStream os = msg.getContent(OutputStream.class);
         if (os != null) {
+            os.flush();
             os.close();
         }
         InputStream in = msg.getContent(InputStream.class);

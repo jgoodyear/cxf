@@ -1624,10 +1624,8 @@ public abstract class HTTPConduit
                 || outMessage.getExchange() == null
                 || outMessage.getExchange().isSynchronous()) {
                 handleResponseInternal();
-                System.out.println("handleResponseInternal");
             } else {
                 handleResponseAsync();
-                System.out.println("handleResponseAsync");
             }
         }
 

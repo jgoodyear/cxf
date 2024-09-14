@@ -176,7 +176,7 @@ public abstract class AbstractHTTPDestination
                 if (authBytes == null) {
                     throw new Base64Exception(new Throwable("Invalid Base64 data."));
                 }
-                
+
                 String authDecoded = decodeBasicAuthWithIso8859
                     ? new String(authBytes, StandardCharsets.ISO_8859_1) : new String(authBytes);
 
@@ -358,7 +358,7 @@ public abstract class AbstractHTTPDestination
             //and Jetty 12 can't handle it right now
             servletPath = requestURI;
         }
-        
+
         if (servletPath == null) {
             servletPath = "";
         }
@@ -409,7 +409,7 @@ public abstract class AbstractHTTPDestination
         SecurityContext httpSecurityContext = new SecurityContext() {
             public Principal getUserPrincipal() {
                 //ensure we use req from the one saved in inMessage
-                //as this could be the cachedInput one in oneway and 
+                //as this could be the cachedInput one in oneway and
                 //ReplyTo is specified when ws-addressing is used
                 //which means we need to switch thread context
                 //and underlying transport might discard any data on the original stream
@@ -418,7 +418,7 @@ public abstract class AbstractHTTPDestination
             }
             public boolean isUserInRole(String role) {
                 //ensure we use req from the one saved in inMessage
-                //as this could be the cachedInput one in oneway and 
+                //as this could be the cachedInput one in oneway and
                 //ReplyTo is specified when ws-addressing is used
                 //which means we need to switch thread context
                 //and underlying transport might discard any data on the original stream
